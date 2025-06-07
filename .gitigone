@@ -10,6 +10,7 @@ __pycache__/
 # Jupyter checkpoints & data
 .ipynb_checkpoints/
 data/
+data
 *.csv
 
 # VSCode settings
