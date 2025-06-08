@@ -6,39 +6,21 @@ import os
 
 class Preprocessor:
     def load_data(self, file_path):
-        """
-        Load the combined reviews data.
-        
-        Args:
-            file_path (str): Path to the CSV file
-            
-        Returns:
-            pd.DataFrame: Loaded data
-        """
         return pd.read_csv(file_path)
+    #check duplicates
+    def duplicate_check(self, df):
+        return df.duplicated().sum()
 
     def remove_duplicates(self, df):
-        """
-        Remove duplicate reviews based on content and date.
         
-        Args:
-            df (pd.DataFrame): Input DataFrame
-            
-        Returns:
-            pd.DataFrame: DataFrame with duplicates removed
-        """
         return df.drop_duplicates(subset=['review', 'date', 'bank'], keep='first')
+#check missing values
+    def missing_values(self, df):
+        return df.isnull().sum()
+
 
     def handle_missing_data(self, df):
-        """
-        Handle missing values in the dataset.
-        
-        Args:
-            df (pd.DataFrame): Input DataFrame
-            
-        Returns:
-            pd.DataFrame: DataFrame with handled missing values
-        """
+      
         # Fill missing reviews with empty string
         df['review'] = df['review'].fillna('')
         
@@ -69,24 +51,37 @@ def main():
     # Create processed data directory
     os.makedirs('data/processed', exist_ok=True)
     
+    # Initialize preprocessor
+    preprocessor = Preprocessor()
+    
     # Load the raw data
     print("Loading data...")
-    df = load_data('data/raw/all_bank_reviews.csv')
+    df = preprocessor.load_data('data/raw/all_bank_reviews.csv')
     
     # Print initial statistics
     print(f"\nInitial number of reviews: {len(df)}")
     print(f"Missing values:\n{df.isnull().sum()}")
     
+    # Check for duplicates
+    print("Total number of rows:", len(df))
+    print("\nNumber of duplicates based on all columns:", df.duplicated().sum())
+    print("\nNumber of duplicates based on review, date, and bank:", df.duplicated(subset=['review', 'date', 'bank']).sum())
+
+    # Show some examples of duplicates
+    duplicates = df[df.duplicated(subset=['review', 'date', 'bank'], keep=False)]
+    print("\nExample of duplicate entries:")
+    print(duplicates.sort_values(['review', 'date', 'bank']).head(10))
+    
     # Preprocess the data
     print("\nPreprocessing data...")
-    df = remove_duplicates(df)
+    df = preprocessor.remove_duplicates(df)
     print(f"Reviews after removing duplicates: {len(df)}")
     
-    df = handle_missing_data(df)
+    df = preprocessor.handle_missing_data(df)
     print("\nMissing values after handling:")
     print(df.isnull().sum())
     
-    df = normalize_dates(df)
+    df = preprocessor.normalize_dates(df)
     
     # Save processed data
     output_path = 'data/processed/processed_reviews.csv'
