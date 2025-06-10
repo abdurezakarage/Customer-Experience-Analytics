@@ -10,6 +10,7 @@ from transformers import DistilBertTokenizer, DistilBertForSequenceClassificatio
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 import numpy as np
+import os
 import re
 from collections import defaultdict
 
@@ -108,32 +109,27 @@ class SentimentAnalyzer:
         print("Top Keywords:", keywords)
         
         return keywords
-    
+
     def cluster_themes(self, texts, n_clusters=5):
         """Cluster texts into themes using K-means"""
         if not texts:
             return [], {}
-            
-        # Vectorize the texts
+
         vectorizer = TfidfVectorizer(max_features=1000, ngram_range=(1, 2))
         X = vectorizer.fit_transform(texts)
-        
-        # Convert to dense array for KMeans
         X_dense = X.toarray()
-        
-        # Perform clustering
+
         kmeans = KMeans(n_clusters=n_clusters, random_state=42)
         clusters = kmeans.fit_predict(X_dense)
-        
-        # Extract top keywords from k-means cluster centers
+
         feature_names = vectorizer.get_feature_names_out()
         cluster_keywords = {}
-        
+
         for i in range(n_clusters):
             center = kmeans.cluster_centers_[i]
             top_indices = center.argsort()[-10:][::-1]
             cluster_keywords[i] = [feature_names[idx] for idx in top_indices]
-        
+
         return clusters, cluster_keywords
 
     def map_to_theme_categories(self, keywords):
@@ -151,36 +147,36 @@ class SentimentAnalyzer:
         return 'Other'
 
     def analyze_reviews(self, df):
-        """Main analysis pipeline"""
-        # Preprocess texts
+        """Analyze reviews and generate sentiment analysis results"""
+        # Preprocess text
         df['processed_text'] = df['review'].apply(self.preprocess_text)
-        
-        # Get sentiment scores
+
+        # Sentiment label
         sentiment_results = df['review'].apply(self.get_sentiment)
         df['sentiment_label'] = sentiment_results
-        
+
         # Extract keywords
         keywords = self.extract_keywords(df['processed_text'].tolist())
         df['keywords'] = [keywords] * len(df)
-        
-        # Cluster into themes and map to categories
+
+        # Cluster theme and map to categories
         clusters, theme_keywords = self.cluster_themes(df['processed_text'].tolist())
         df['theme_cluster'] = clusters
-        
-        # Map clusters to banking-specific themes
-        df['theme_category'] = df['theme_cluster'].apply(
-            lambda x: self.map_to_theme_categories(theme_keywords[x])
-        )
-        
-        # Calculate sentiment scores
+        df['theme_category'] = df['theme_cluster'].apply(lambda x: self.map_to_theme_categories(theme_keywords[x]))
+
+        # Sentiment score
         df['sentiment_score'] = df['review'].apply(
             lambda x: self.get_sentiment_score(x) if isinstance(x, str) else 0.5
         )
-        
-        # Save results with enhanced columns
-        output_path = 'data/processed/sentiment_analysis_results.csv'
+
+        # Save to CSV
+        output_dir = '../data/processed'
+        os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
+
+        output_path = os.path.join(output_dir, 'sentiment_analysis_results.csv')
         df.to_csv(output_path, index=False)
-        
+
+        print(f"✅ Sentiment analysis results saved to: {output_path}")
         return df, theme_keywords
     
     def get_sentiment_score(self, text):
@@ -277,4 +273,14 @@ class SentimentAnalyzer:
         plt.tight_layout()
         plt.show()
 
-        
+    def plot_summary(self, df):
+        sentiment_counts = df['sentiment_label'].value_counts()
+        plt.figure(figsize=(8, 8))
+        plt.pie(sentiment_counts, labels=sentiment_counts.index, autopct='%1.1f%%', startangle=140, colors=['#66bb6a','#ef5350','#ffee58'])
+        # Draw a white circle in the center
+        centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+        fig = plt.gcf()
+        fig.gca().add_artist(centre_circle)
+        plt.title('Overall Sentiment Distribution (Donut View)', fontsize=14)
+        plt.tight_layout()
+        plt.show()
