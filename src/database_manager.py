@@ -163,13 +163,13 @@ class DatabaseManager:
 
             cursor.executemany("""
             INSERT INTO reviews (
-                bank_id, review, rating, sentiment_label,
+                bank_id, review_text, rating, sentiment_label,
                 sentiment_score, theme_category, processed_text
             ) VALUES (:1, :2, :3, :4, :5, :6, :7)
           """, reviews_data)
 
             self.connection.commit()
-            print(f"✅ Successfully inserted {len(reviews_data)} reviews")
+            print(f"✅ Successfully inserted reviews")
 
         except Exception as e:
             print(f"❌ Error inserting reviews: {e}")
