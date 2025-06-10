@@ -92,7 +92,7 @@ class SentimentAnalyzer:
             return 'neutral'
  
     
-    def extract_keywords(self, texts, n_keywords=50):
+    def extract_keywords(self, texts, n_keywords=100):
         """Extract keywords using TF-IDF"""
         if not isinstance(texts, (list, tuple)):
             raise TypeError("texts must be a list or tuple of strings")
@@ -106,7 +106,7 @@ class SentimentAnalyzer:
         
         # Get top keywords
         keywords = vectorizer.get_feature_names_out()
-        print("Top Keywords:", keywords)
+        #print("Top Keywords:", keywords)
         
         return keywords
 
@@ -219,7 +219,9 @@ class SentimentAnalyzer:
         plt.figure(figsize=(10, 6))
         bank_sentiment = df.groupby('bank')['rating'].mean()
         bank_sentiment.plot(kind='bar')
-        plt.title('Mean Sentiment by Bank')
+        plt.title('Mean rating by Bank')
+        plt.xlabel('Bank')
+        plt.ylabel('Mean Rating')
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
@@ -282,5 +284,16 @@ class SentimentAnalyzer:
         fig = plt.gcf()
         fig.gca().add_artist(centre_circle)
         plt.title('Overall Sentiment Distribution (Donut View)', fontsize=14)
+        plt.tight_layout()
+        plt.show()
+        
+    def rating_distribution(self, df):
+        """Plot rating distribution"""
+        plt.figure(figsize=(10, 6))
+        df['rating'].value_counts().sort_index().plot(kind='bar')
+        plt.title('Rating Distribution')
+        plt.xlabel('Rating')
+        plt.ylabel('Frequency')
+        plt.xticks(rotation=0)
         plt.tight_layout()
         plt.show()
